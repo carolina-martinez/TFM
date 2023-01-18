@@ -32,8 +32,10 @@ import argparse
 import keyboard
 import os
 from time import time
+from time import sleep
 import platform
 import sys
+import paho.mqtt.client as mqtt #import the client1
 from pathlib import Path
 
 import torch
@@ -51,6 +53,16 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 
+new_message = False
+warning_given = False
+
+def on_message(client, userdata, message): #cuando llega un nuevo mensaje se llama a esta función 
+    global new_message
+    global warning_given
+    new_message = True
+    sleep(10)
+    new_message = False
+    warning_given = False
 
 @smart_inference_mode()
 def run(
@@ -82,6 +94,7 @@ def run(
         dnn=False,  # use OpenCV DNN for ONNX inference
         vid_stride=1,  # video frame-rate stride
 ):
+    global warning_given
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
@@ -101,7 +114,17 @@ def run(
     stride, names, pt = model.stride, model.names, model.pt
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
-    start_timer = 0
+    # Configure MQTT Connection
+    broker_address="192.168.1.136" #direccion IP del broker MQTT (es la misma que la Jetson porque el broker esta en la Jetson) 
+    print("creating new instance")
+    client = mqtt.Client("PC-Detections") #create new instance
+    client.on_message = on_message #funcion callback: cuando llegue un mensaje, estes donde estes en el codigo, se llama
+    #a esta funcion
+    print("connecting to broker")
+    client.connect(broker_address,1885) #connect to broker // podriamos dejarlo en el puerto por defecto
+    #(el mosquitto se activa en el puerto 1883 cuando se enciende la Jetson. Si no especificas puerto aqui, va a ese)
+    client.subscribe("Detection/RFID") #nos suscribimos al topic Detection/RFID
+    client.loop_start() #para que empiece a escuchar a ver si llega algun mensaje
 
     # Dataloader
     bs = 1  # batch_size
@@ -119,6 +142,7 @@ def run(
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
     for path, im, im0s, vid_cap, s in dataset:
+        
         with dt[0]:
             im = torch.from_numpy(im).to(model.device)
             im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -144,17 +168,18 @@ def run(
         #en este caso vamos a tener siempre una sola imagen, pero cogemos el elemento 0
         detected_classes = detection[:,-1] #el -1 ooge la ultima columna
         
-        if (time() - start_timer > 10 ):
-            message = 'Presione la barra espaciadora'
-            if keyboard.is_pressed(' '):
-                start_timer = time()
-                if (1 in detected_classes): 
-                    message = "Todo el mundo lleva mascarillas"
-                if (0 in detected_classes):
-                    message = "Alguien lleva la mascarilla mal puesta"
-                if (2 in detected_classes):
-                    message = "Hay alguien sin mascarilla"
-        
+        if new_message and not warning_given:
+            if (1 in detected_classes): 
+                message = "Todo el mundo lleva mascarillas"
+                warning_given = True
+            if (0 in detected_classes):
+                message = "Alguien lleva la mascarilla mal puesta"
+                warning_given = True
+            if (2 in detected_classes):
+                message = "Hay alguien sin mascarilla"
+                warning_given = True
+        if not new_message: 
+            message = 'Por favor, acerque la tarjeta'
         
         
 
@@ -230,7 +255,8 @@ def run(
 
         # Print time (inference-only)
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
-
+        
+    client.loop_stop 
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
