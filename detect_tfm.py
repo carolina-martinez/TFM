@@ -29,7 +29,6 @@ Usage - formats:
 """
 
 import argparse
-import keyboard
 import os
 from time import time
 from time import sleep
