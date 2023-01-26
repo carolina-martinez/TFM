@@ -29,7 +29,7 @@ reader = SimpleMFRC522()
 try:
     client =mqtt.Client("Jetson-LectorRFID")
     client.on_message = on_message
-    client.connect("localhost",1885)
+    client.connect("localhost")
     client.subscribe("Detection/masks")
     client.loop_start() #inicializa el loop que esta a la espera de mensajes
     while True:

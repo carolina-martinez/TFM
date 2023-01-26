@@ -120,7 +120,7 @@ def run(
     client.on_message = on_message #funcion callback: cuando llegue un mensaje, estes donde estes en el codigo, se llama
     #a esta funcion
     print("connecting to broker")
-    client.connect(broker_address,1885) #connect to broker // podriamos dejarlo en el puerto por defecto
+    client.connect(broker_address) #connect to broker // podriamos dejarlo en el puerto por defecto
     #(el mosquitto se activa en el puerto 1883 cuando se enciende la Jetson. Si no especificas puerto aqui, va a ese)
     client.subscribe("Detection/RFID") #nos suscribimos al topic Detection/RFID
     client.loop_start() #para que empiece a escuchar a ver si llega algun mensaje
