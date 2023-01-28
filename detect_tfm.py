@@ -59,7 +59,7 @@ def on_message(client, userdata, message): #cuando llega un nuevo mensaje se lla
     global new_message
     global warning_given
     new_message = True
-    sleep(10)
+    sleep(5)
     new_message = False
     warning_given = False
 
@@ -116,14 +116,16 @@ def run(
     # Configure MQTT Connection
     broker_address="192.168.1.136" #direccion IP del broker MQTT (es la misma que la Jetson porque el broker esta en la Jetson) 
     print("creating new instance")
-    client = mqtt.Client("PC-Detections") #create new instance
-    client.on_message = on_message #funcion callback: cuando llegue un mensaje, estes donde estes en el codigo, se llama
+    client_rx = mqtt.Client("receiver_detections") #create new instance
+    client_tx = mqtt.Client("transmitter_detections")
+    client_rx.on_message = on_message #funcion callback: cuando llegue un mensaje, estes donde estes en el codigo, se llama
     #a esta funcion
     print("connecting to broker")
-    client.connect(broker_address) #connect to broker // podriamos dejarlo en el puerto por defecto
+    client_rx.connect(broker_address) #connect to broker // podriamos dejarlo en el puerto por defecto
+    client_tx.connect(broker_address)
     #(el mosquitto se activa en el puerto 1883 cuando se enciende la Jetson. Si no especificas puerto aqui, va a ese)
-    client.subscribe("Detection/RFID") #nos suscribimos al topic Detection/RFID
-    client.loop_start() #para que empiece a escuchar a ver si llega algun mensaje
+    client_rx.subscribe("Detection/RFID") #nos suscribimos al topic Detection/RFID
+    client_rx.loop_start() #para que empiece a escuchar a ver si llega algun mensaje
 
     # Dataloader
     bs = 1  # batch_size
@@ -170,15 +172,15 @@ def run(
         if new_message and not warning_given:
             if (1 in detected_classes): 
                 message = "Todo el mundo lleva mascarillas"
-                client.publish("Detection/masks","ok")
+                client_tx.publish("Detection/masks","ok")
                 warning_given = True
             if (0 in detected_classes):
                 message = "Alguien lleva la mascarilla mal puesta"
-                client.publish("Detection/masks","no_ok")
+                client_tx.publish("Detection/masks","no_ok")
                 warning_given = True
             if (2 in detected_classes):
                 message = "Hay alguien sin mascarilla"
-                client.publish("Detection/masks","no_ok")
+                client_tx.publish("Detection/masks","no_ok")
                 warning_given = True
         if not new_message: 
             message = 'Por favor, acerque la tarjeta'
@@ -258,7 +260,7 @@ def run(
         # Print time (inference-only)
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
         
-    client.loop_stop() 
+    client_rx.loop_stop() 
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
