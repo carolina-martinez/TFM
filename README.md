@@ -39,3 +39,4 @@ sudo modprobe spidev #To enable SPI on the Jetson Nano
 python3 RFID.py
 ```
 
+This proyect is based on YOLOv5: https://github.com/ultralytics/yolov5
