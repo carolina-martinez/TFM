@@ -114,7 +114,7 @@ def run(
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
     # Configure MQTT Connection
-    broker_address="192.168.1.136" #direccion IP del broker MQTT (es la misma que la Jetson porque el broker esta en la Jetson) 
+    broker_address="localhost" #direccion IP del broker MQTT (es la misma que la Jetson porque el broker esta en la Jetson) 
     print("creating new instance")
     client_rx = mqtt.Client("receiver_detections") #create new instance
     client_tx = mqtt.Client("transmitter_detections")
