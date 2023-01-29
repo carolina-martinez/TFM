@@ -1,4 +1,4 @@
-This proyect contains the neccessay code to install and deploy a YOLOv5 model to detect people wearing masks, not wearing masks and incorreclty wearing masks. This script has the ability to make an access control application. Compatible with Jetson Nano.
+This project contains the neccessary code to install and deploy a YOLOv5 model to detect people wearing masks, not wearing masks and incorrectly wearing masks. This script has the ability to make an access control application. Compatible with Jetson Nano.
 
 <summary>Install</summary>
 
@@ -12,7 +12,7 @@ git clone https://github.com/carolina-martinez/TFM.git  # clone
 cd TFM
 pip install -r requirements.txt  # install
 ```
-If you are going to use the RFID functionality for access control, you also have to install an mqtt broker. For this, we can install mosquitto.
+If you are going to use the RFID functionality for access control, you also have to install an MQTT broker. For this, we can install mosquitto.
 
 ```bash
 sudo apt update
@@ -42,4 +42,4 @@ python3 RFID.py
 By default _broker_address_ variable is setup to localhost for running the two scripts inside one Jetson. If used in two different devices modify _broker_address_ in detect_tfm.py to the IP of the jetson running mosquitto and RFID.py
 
 
-This proyect is based on YOLOv5: https://github.com/ultralytics/yolov5
+This project is based on YOLOv5: https://github.com/ultralytics/yolov5
